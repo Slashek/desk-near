@@ -1,5 +1,6 @@
 DesksNearMe::Application.routes.draw do
-  get "listing/search"
+
+  post "listings/search", :defaults => { :format => 'json' }
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

@@ -21,6 +21,7 @@ Spork.prefork do
   Spork.trap_method(Rails::Application::RoutesReloader, :reload!)
 
   Dir[Rails.root.join("spec/support/**/*.rb")].each {|f| require f}
+  Dir[Rails.root.join("spec/lib/**/*.rb")].each {|f| require f}
 
   RSpec.configure do |config|
     # ## Mock Framework
