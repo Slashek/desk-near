@@ -1,10 +1,13 @@
 class BoundingBox
-  attr_accessor :top_left, :bottom_right, :listing_cache
+  attr_accessor :top_left, :bottom_right, :listing_cache, :center
 
   def initialize(hash)
     valid?(hash)
     self.top_left = hash["start"]
     self.bottom_right = hash["end"]
+    self.center = {
+      "lat" => (hash["start"]["lat"] + hash["end"]["lat"])/2,
+      "lon" => (hash["start"]["lon"] + hash["end"]["lon"])/2}
   end
 
   def includes_listing?(listing)
@@ -27,6 +30,10 @@ class BoundingBox
   def listing_in_box?(listing)
     raise 'Listing must have filled lat and lon fields' unless listing.lat && listing.lon
     inside?(listing.lat, listing.lon)
+  end
+
+  def distance_from(lat, lon)
+    return (lat - self.center["lat"]).abs + (lon - self.center['lon']).abs
   end
 
   def valid?(hash)

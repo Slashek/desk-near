@@ -34,17 +34,23 @@ FactoryGirl.define do
     price {FactoryGirl.create(:price)}
     quantity 8
     rating {FactoryGirl.create(:rating)}
-    web_listing_url "https://desksnear.me/workplaces/42"
-    api_listing_url "https://desksnear.me/api/v1/listings/42"
-    api_rating_url "https://desksnear.me/api/v1/listings/42/rating"
-    api_connections_url "https://desksnear.me/api/v1/listings/42/connections"
-    api_patrons_url "https://desksnear.me/api/v1/listings/42/patrons"
-    api_availability_url "https://desksnear.me/api/v1/listings/42/availability"
-    api_reservation_url "https://desksnear.me/api/v1/listings/42/reservation"
+  end
+
+  factory :listing_with_wifi_foosball, :class => :listing do
+    amenities {[FactoryGirl.create(:amenity_wifi), FactoryGirl.create(:amenity_foosball)]}
+    organizations {[]}
+    name "With wifi and foosball"
+    description "My home"
+    address "Ursynowska street"
+    lat 3
+    lon -12
+    price {FactoryGirl.create(:price)}
+    quantity 8
+    rating {FactoryGirl.create(:rating)}
   end
 
   factory :listing_faraway, :class => :listing do
-    amenities {[FactoryGirl.create(:amenity_coffee), FactoryGirl.create(:amenity_foosball)]}
+    amenities {[FactoryGirl.create(:amenity_foosball)]}
     organizations {[FactoryGirl.create(:organization_coffee_heaven),FactoryGirl.create(:organization_starbucks)]}
     name "Far away office"
     description "Away"
@@ -54,12 +60,5 @@ FactoryGirl.define do
     price {FactoryGirl.create(:price)}
     quantity 8
     rating {FactoryGirl.create(:rating)}
-    web_listing_url "https://desksnear.me/workplaces/42"
-    api_listing_url "https://desksnear.me/api/v1/listings/42"
-    api_rating_url "https://desksnear.me/api/v1/listings/42/rating"
-    api_connections_url "https://desksnear.me/api/v1/listings/42/connections"
-    api_patrons_url "https://desksnear.me/api/v1/listings/42/patrons"
-    api_availability_url "https://desksnear.me/api/v1/listings/42/availability"
-    api_reservation_url "https://desksnear.me/api/v1/listings/42/reservation"
   end
 end
