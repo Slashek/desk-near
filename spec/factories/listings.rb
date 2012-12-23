@@ -10,6 +10,7 @@ FactoryGirl.define do
     lat 43.36
     lon -116.13
     price {FactoryGirl.create(:price)}
+    availabilities {[FactoryGirl.create(:first_december), FactoryGirl.create(:second_december), FactoryGirl.create(:third_december)]}
    # price {[FactoryGirl.create(:price)]}
     quantity 8
     rating {FactoryGirl.create(:rating)}
@@ -34,6 +35,7 @@ FactoryGirl.define do
     price {FactoryGirl.create(:price)}
     quantity 8
     rating {FactoryGirl.create(:rating)}
+    availabilities {[FactoryGirl.create(:first_december), FactoryGirl.create(:second_december), FactoryGirl.create(:third_december)]}
   end
 
   factory :listing_with_wifi_foosball, :class => :listing do
@@ -44,6 +46,7 @@ FactoryGirl.define do
     address "Ursynowska street"
     lat 3
     lon -12
+    availabilities {[FactoryGirl.create(:first_december), FactoryGirl.create(:second_december), FactoryGirl.create(:third_december)]}
     price {FactoryGirl.create(:price)}
     quantity 8
     rating {FactoryGirl.create(:rating)}
@@ -57,6 +60,7 @@ FactoryGirl.define do
     address "Unknown"
     lat 50
     lon -100
+    availabilities {[]}
     price {FactoryGirl.create(:price)}
     quantity 8
     rating {FactoryGirl.create(:rating)}

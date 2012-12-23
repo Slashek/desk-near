@@ -16,6 +16,7 @@ Spork.prefork do
   # Requires supporting ruby files with custom matchers and macros, etc,
   # in spec/support/ and its subdirectories.
   require 'factory_girl'
+  require 'database_cleaner'
 
   require "rails/application" 
   Spork.trap_method(Rails::Application::RoutesReloader, :reload!)
@@ -58,11 +59,24 @@ Spork.prefork do
     require File.dirname(__FILE__) + "/../config/environment.rb"
 
     config.include FactoryGirl::Syntax::Methods
+
+    config.before(:suite) do
+      DatabaseCleaner.strategy = :truncation
+    end
+
+    config.before(:each) do
+      DatabaseCleaner.start
+    end
+
+    config.after(:each) do
+      DatabaseCleaner.clean
+    end
   end
 end
 
 Spork.each_run do
   # This code will be run each time you run your specs.
+  ENV["RAILS_ENV"] ||= 'test'
   FactoryGirl.reload
 
 end

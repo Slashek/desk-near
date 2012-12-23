@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe ScoreCalculator do
 
-  before do
+  before(:each) do
     @score_calculator = ScoreCalculator.new(
       {
       "boundingbox"=> {
@@ -19,11 +19,6 @@ describe ScoreCalculator do
       "lat"=> 5,
       "lon"=> 5
     },
-      "dates"=> ["2012-06-01", "2012-06-15"],
-      "quantity"=> {
-      "min"=> 5,
-      "max"=> 12
-    },
     })
     @listing_maciek = FactoryGirl.create(:listing_maciek)
     @listing_faraway = FactoryGirl.create(:listing_faraway)
@@ -33,7 +28,7 @@ describe ScoreCalculator do
 
     context 'listing inside boundbox' do
 
-      before do 
+      before(:each) do 
         @score_calculator.set_current_listing(@listing_maciek)
       end
 
@@ -86,16 +81,32 @@ describe ScoreCalculator do
         assert_equal(true, @score_calculator.is_strict_matched?)
       end
 
-      it 'is false always' do
+      it 'is false if price lower than min' do
         @score_calculator.price =  {"min" => @listing_maciek.price.amount-1 }
         assert_equal(false, @score_calculator.is_strict_matched?)
       end
 
+      it 'is false if missing availability for certain day' do
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) << '2014-10-15'
+        assert_equal(false, @score_calculator.is_strict_matched?)
+      end
+
+      it 'is false if missing quantity for certain day' do
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) 
+        @score_calculator.quantity = { "min" => @listing_maciek.availabilities.collect(&:quantity).min+1  }
+        assert_equal(false, @score_calculator.is_strict_matched?)
+      end
+
+      it 'is true if available enough desks each day' do
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) 
+        @score_calculator.quantity = {"min" =>  @listing_maciek.availabilities.collect(&:quantity).min }
+        assert_equal(true, @score_calculator.is_strict_matched?)
+      end
     end
 
     context 'listing outside boundbox' do
 
-      before do 
+      before(:each) do 
         @score_calculator.set_current_listing(@listing_faraway)
       end
 
@@ -136,14 +147,48 @@ describe ScoreCalculator do
       @score_calculator.price = {"max" => 10.25, "min" => -5.75}
       @score_calculator.define_price_average
       @score_calculator.set_current_listing(@listing_maciek)
-      assert_equal(72.75, @score_calculator.calculate_price_diff)
+      assert_equal(72.75, @score_calculator.calculate_price_diff_for_listing)
     end
 
-    it 'calculating boundingbox ranking' do
+    it 'calculates boundingbox ranking' do
       @score_calculator.set_current_listing(@listing_faraway)
       assert_equal(150.0, @score_calculator.calculate_distance_for_listing)
       @score_calculator.set_current_listing(@listing_maciek)
       assert_equal(5.0, @score_calculator.calculate_distance_for_listing)
+    end
+
+    describe 'calculates availability ranking' do
+      it 'has 0 score when all desks are available for each day' do
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) 
+        @score_calculator.quantity = { "min" => @listing_maciek.availabilities.collect(&:quantity).min  }
+        @score_calculator.set_current_listing(@listing_maciek)
+        assert_equal(0, @score_calculator.calculate_availability_for_listing)
+      end
+
+      it 'has other score when desks are not available for each day' do
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) << "2014-10-21" << "2014-10-22"
+        @score_calculator.quantity = { "min" => 2  }
+        @score_calculator.define_min_quantity
+        @score_calculator.set_current_listing(@listing_maciek)
+        assert_equal(2.5, @score_calculator.calculate_availability_for_listing)
+      end
+
+    end
+
+    describe 'calcualtes overall weighten score' do
+
+      before(:each) do
+        @score_calculator.amenities = @listing_maciek.amenities.collect(&:id)
+        @score_calculator.organizations = @listing_maciek.organizations.collect(&:id)
+        @score_calculator.dates = @listing_maciek.availabilities.collect(&:date) << "2014-10-21" << "2014-10-22"
+        @score_calculator.quantity = { "min" => 2  }
+        @score_calculator.define_min_quantity
+        @score_calculator.price = {"max" => 10.25, "min" => -5.75}
+        @score_calculator.define_price_average
+        listings = [@listing_maciek, @listing_faraway, FactoryGirl.create(:listing_with_wifi_foosball)]
+        listings.each do |listing|
+        end
+      end
     end
 
   end
@@ -169,6 +214,22 @@ describe ScoreCalculator do
       end
 
     end
+    
+    context 'with desc order' do
+
+      it 'can assign different rank for each object' do
+        assert_equal({1 => 3, 3 => 2, 2 => 1}, @score_calculator.convert_to_rank({1 => 10 , 2 => 30, 3 => 20}, 'desc'))
+      end
+
+      it 'can assign same rank to multiple objects' do
+        assert_equal({1 => 2, 2 => 2, 3 => 1}, @score_calculator.convert_to_rank({1 => 10 , 2 => 10, 3 => 20}, 'desc'))
+      end
+
+      it 'can assign same rank to all objects' do
+        assert_equal({1 => 1, 2 => 1, 3 => 1}, @score_calculator.convert_to_rank({1 => 10 , 2 => 10, 3 => 10}, 'desc'))
+      end
+
+    end
 
   end
 
@@ -185,7 +246,7 @@ describe ScoreCalculator do
 
   describe  'defines price_average' do
 
-    before do
+    before(:each) do
       @score_calculator.price = {}
     end
 
@@ -193,12 +254,12 @@ describe ScoreCalculator do
       @score_calculator.price = {"min" => 10}
       assert_equal(10, @score_calculator.define_price_average)
     end
-    
+
     it 'use only max if no min' do
       @score_calculator.price = {"max" => 10}
       assert_equal(10, @score_calculator.define_price_average)
     end
-    
+
     it 'calculates average if max and min' do
       @score_calculator.price = {"max" => 10, "min" => 0}
       assert_equal(5, @score_calculator.define_price_average)

@@ -9,6 +9,6 @@ class Price < ActiveRecord::Base
   end
 
   def hardcode_period
-    self.period = 'Day'
+    self.period = self.label == 'Free' ? nil : 'Day' 
   end
 end
