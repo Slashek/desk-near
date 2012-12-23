@@ -98,7 +98,7 @@ describe ListingsController do
     end
 
     it 'obtains results with the right score' do
-      post :search, @params,  :format => :json
+      post :search, @params
       actual = JSON.parse(response.body)
       puts actual.class.to_s
       actual_scores = []
@@ -106,6 +106,28 @@ describe ListingsController do
         actual_scores << listing["score"].to_f.round(2)
       end
       expected_score = [43.33, 71.67, 80.0] # should use be_within or something similar
+      assert_equal(expected_score, actual_scores)
+    end
+
+    it 'requires only boundingbox' do
+      post :search, :boundingbox => @params["boundingbox"]
+      actual = JSON.parse(response.body)
+      actual_scores = []
+      actual["listings"].each do |listing|
+        actual_scores << listing["score"].to_f.round(2)
+      end
+      expected_score = [13.33, 26.67, 40.0] # should use be_within or something similar
+      assert_equal(expected_score, actual_scores)
+    end
+
+    it 'returns listings in the right order' do
+      post :search, :boundingbox => @params["boundingbox"]
+      actual = JSON.parse(response.body)
+      actual_scores = []
+      actual["listings"].each do |listing|
+        actual_scores << listing["name"]
+      end
+      expected_score = [@listing_maciek.name,@listing_with_wifi_foosball.name, @listing_faraway.name ] # should use be_within or something similar
       assert_equal(expected_score, actual_scores)
     end
   end

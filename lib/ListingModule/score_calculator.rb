@@ -43,10 +43,10 @@ class ScoreCalculator
     #{(@normalized_availability_hash[listing.id] ?  @normalized_availability_hash[listing.id] : 0)}*0.15"
 
     return @normalized_distance_hash[listing.id]*0.4 + 
-      (@normalized_amenities_hash[listing.id] ? @normalized_amenities_hash[listing.id] : 0 )*0.15 +
-      (@normalized_organizations_hash[listing.id] ? @normalized_organizations_hash[listing.id] : 0)*0.15 +
-      (@normalized_price_hash[listing.id] ? @normalized_price_hash[listing.id] : 0) *0.15 +
-      (@normalized_availability_hash[listing.id] ?  @normalized_availability_hash[listing.id] : 0)*0.15
+    (@normalized_amenities_hash[listing.id] ? @normalized_amenities_hash[listing.id] : 0 )*0.15 +
+    (@normalized_organizations_hash[listing.id] ? @normalized_organizations_hash[listing.id] : 0)*0.15 +
+    (@normalized_price_hash[listing.id] ? @normalized_price_hash[listing.id] : 0) *0.15 +
+    (@normalized_availability_hash[listing.id] ?  @normalized_availability_hash[listing.id] : 0)*0.15
   end
 
   def calculate_distance_for_listing
@@ -56,17 +56,25 @@ class ScoreCalculator
   end
 
   def calculate_amenities_matched_for_listing
-    amenities_matched = self.amenities.count - (self.amenities - @current_listing.amenities.collect(&:id)).count
-    #puts @current_listing.name + " " + amenities_matched.to_s
-    #puts "#{self.amenities.count} - #{(self.amenities - @current_listing.amenities.collect(&:id)).count } (#{self.amenities.to_s} - #{@current_listing.amenities.collect(&:id).to_s}).count"
-    @amenities_ranking[@current_listing.id] = amenities_matched
-    amenities_matched
+    unless self.amenities.empty?
+      amenities_matched = self.amenities.count - (self.amenities - @current_listing.amenities.collect(&:id)).count
+      #puts @current_listing.name + " " + amenities_matched.to_s
+      #puts "#{self.amenities.count} - #{(self.amenities - @current_listing.amenities.collect(&:id)).count } (#{self.amenities.to_s} - #{@current_listing.amenities.collect(&:id).to_s}).count"
+      @amenities_ranking[@current_listing.id] = amenities_matched
+      amenities_matched
+    else
+      nil
+    end
   end
 
   def calculate_organizations_matched_for_listing
-    organizations_matched = self.organizations.count - (self.organizations -  @current_listing.organizations.collect(&:id)).count
-    @organizations_ranking[@current_listing.id] = organizations_matched
-    organizations_matched
+    unless self.organizations.empty?
+      organizations_matched = self.organizations.count - (self.organizations -  @current_listing.organizations.collect(&:id)).count
+      @organizations_ranking[@current_listing.id] = organizations_matched
+      organizations_matched
+    else
+      nil
+    end
   end
 
   def calculate_availability_for_listing
@@ -90,20 +98,24 @@ class ScoreCalculator
 
   def calculate_price_diff_for_listing
     # 2012-12-22 MKK: currency conversion might be required
-    price_diff = self.price_average ? (self.price_average - @current_listing.price.amount).abs : 0
-    @price_ranking[@current_listing.id] = price_diff
-    price_diff
+    if self.price_average
+      price_diff = self.price_average ? (self.price_average - @current_listing.price.amount).abs : 0
+      @price_ranking[@current_listing.id] = price_diff
+      price_diff
+    else
+      nil
+    end
   end
 
   def is_strict_matched?
     inside? && 
-    (self.amenities - @current_listing.amenities.collect(&:id)).empty? &&
-    (self.organizations - @current_listing.organizations.collect(&:id)).empty? &&
-    # 2012-12-20 MKK TODO: how about currency convertion?
-    (self.price["max"] ? self.price["max"] <= @current_listing.price.amount : true) &&
-    (self.price["min"] ? self.price["min"] >= @current_listing.price.amount : true) &&
-    (self.dates ? (self.dates.collect{ |date| date.to_s } - @current_listing.availabilities.where(:date => self.dates).collect{|av| av.date.to_s }).empty? : true ) &&
-    (self.dates && self.quantity["min"] ? (@current_listing.availabilities.where(:date => self.dates).collect(&:quantity).min ? (self.quantity["min"].to_i <= @current_listing.availabilities.where(:date => self.dates).collect(&:quantity).min) : true ) : true )
+      (self.amenities - @current_listing.amenities.collect(&:id)).empty? &&
+      (self.organizations - @current_listing.organizations.collect(&:id)).empty? &&
+      # 2012-12-20 MKK TODO: how about currency convertion?
+      (self.price["max"] ? self.price["max"] <= @current_listing.price.amount : true) &&
+      (self.price["min"] ? self.price["min"] >= @current_listing.price.amount : true) &&
+      (self.dates ? (self.dates.collect{ |date| date.to_s } - @current_listing.availabilities.where(:date => self.dates).collect{|av| av.date.to_s }).empty? : true ) &&
+      (self.dates && self.quantity["min"] ? (@current_listing.availabilities.where(:date => self.dates).collect(&:quantity).min ? (self.quantity["min"].to_i <= @current_listing.availabilities.where(:date => self.dates).collect(&:quantity).min) : true ) : true )
   end
 
   def inside?
@@ -119,14 +131,18 @@ class ScoreCalculator
     @rank = 1
     @previous_value = nil
     @order = order
-    sorted_array = @order=='asc' ? (hash_with_id_value.sort { |a, b| a[1].to_f <=> b[1].to_f }) : (hash_with_id_value.sort { |a, b| b[1].to_f<=>a[1].to_f })
-    sorted_array.each do |id, value| 
-      @previous_value = value if @previous_value.nil? 
-      increment_rank_if_needed(value)
-      @rank_hash[id] = @rank
-      @previous_value = value
+    if hash_with_id_value 
+      sorted_array = @order=='asc' ? (hash_with_id_value.sort { |a, b| a[1].to_f <=> b[1].to_f }) : (hash_with_id_value.sort { |a, b| b[1].to_f<=>a[1].to_f })
+      sorted_array.each do |id, value| 
+        @previous_value = value if @previous_value.nil? 
+        increment_rank_if_needed(value)
+        @rank_hash[id] = @rank
+        @previous_value = value
+      end
+      @rank_hash
+    else
+      {}
     end
-    @rank_hash
   end
 
   def increment_rank_if_needed(value)

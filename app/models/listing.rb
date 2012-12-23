@@ -10,7 +10,10 @@ class Listing < ActiveRecord::Base
 
   def self.find_all_based_on_search(params)
     score_calculator = ScoreCalculator.new(params)
+    # 2012-12-23 MKK: Definitely there will be problems with performance/memory if there re too many listings
+    # For simplicity I have just ignore them for now
     listings = Listing.joins(:price).all
+    # fiest we claculate scores for boundingbox, amenities etc
     listings.each do |listing|
       score_calculator.set_current_listing(listing)
       score_calculator.calculate_score_for_listing
